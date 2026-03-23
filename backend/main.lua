@@ -1,12 +1,13 @@
 local logger = require("logger")
 local millennium = require("millennium")
+local smtc = require("smtc")
 
-function test_frontend_message_callback(message, status, count)
-    logger:info("test_frontend_message_callback called")
-    logger:info("Received args: " .. table.concat({message, tostring(status), tostring(count)}, ", "))
+-- function test_frontend_message_callback(message, status, count)
+--     logger:info("test_frontend_message_callback called")
+--     logger:info("Received args: " .. table.concat({message, tostring(status), tostring(count)}, ", "))
 
-    return "Response from backend"
-end
+--     return "Response from backend"
+-- end
 
 local function on_load()
     print("Example plugin loaded")
@@ -25,8 +26,8 @@ end
 -- Called when the Steam UI has fully loaded.
 local function on_frontend_loaded()
     logger:info("Frontend loaded")
-    local result = millennium.call_frontend_method("classname.method", { 18, "USA", false })
-    logger:info(result)
+    -- local result = millennium.call_frontend_method("classname.method", { 18, "USA", false })
+    -- logger:info(result)
 end
 
 return {
