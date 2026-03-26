@@ -34,6 +34,43 @@ Millennium.exposeObj({MusicController});
 
 // Declare a function that exists on the backend
 // const backendMethod = callable<[{ message: string; status: boolean; count: number }], boolean>('test_frontend_message_callback');
+const SMTC = {
+	get_is_enabled: callable<[], boolean>("SMTC.get_is_enabled"),
+	set_is_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_enabled"),
+	get_is_play_enabled: callable<[], boolean>("SMTC.get_is_play_enabled"),
+	set_is_play_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_play_enabled"),
+	get_is_stop_enabled: callable<[], boolean>("SMTC.get_is_stop_enabled"),
+	set_is_stop_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_stop_enabled"),
+	get_is_pause_enabled: callable<[], boolean>("SMTC.get_is_pause_enabled"),
+	set_is_pause_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_pause_enabled"),
+	get_is_record_enabled: callable<[], boolean>("SMTC.get_is_record_enabled"),
+	set_is_record_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_record_enabled"),
+	get_is_fastforward_enabled: callable<[], boolean>("SMTC.get_is_fastforward_enabled"),
+	set_is_fastforward_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_fastforward_enabled"),
+	get_is_rewind_enabled: callable<[], boolean>("SMTC.get_is_rewind_enabled"),
+	set_is_rewind_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_rewind_enabled"),
+	get_is_previous_enabled: callable<[], boolean>("SMTC.get_is_previous_enabled"),
+	set_is_previous_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_previous_enabled"),
+	get_is_next_enabled: callable<[], boolean>("SMTC.get_is_next_enabled"),
+	set_is_next_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_next_enabled"),
+	get_is_channelup_enabled: callable<[], boolean>("SMTC.get_is_channelup_enabled"),
+	set_is_channelup_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_channelup_enabled"),
+	get_is_channeldown_enabled: callable<[], boolean>("SMTC.get_is_channeldown_enabled"),
+	set_is_channeldown_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_channeldown_enabled"),
+	get_media_type: callable<[], number>("SMTC.get_media_type"),
+	set_media_type: callable<[{type: number}], boolean>("SMTC.set_media_type"),
+	update_display_properties: callable<[], boolean>("SMTC.update_display_properties"),
+	get_title: callable<[], string>("SMTC.get_title"),
+	set_title: callable<[{title: string}], boolean>("SMTC.set_title"),
+	get_album_title: callable<[], string>("SMTC.get_album_title"),
+	set_album_title: callable<[{title: string}], boolean>("SMTC.set_album_title"),
+	get_album_artist: callable<[], string>("SMTC.get_album_artist"),
+	set_album_artist: callable<[{artist: string}], boolean>("SMTC.set_album_artist"),
+	get_artist: callable<[], string>("SMTC.get_artist"),
+	set_artist: callable<[{artist: string}], boolean>("SMTC.set_artist"),
+	get_track_number: callable<[], string>("SMTC.get_track_number"),
+	set_track_number: callable<[{number: number}], boolean>("SMTC.set_track_number")
+}
 
 const SettingsContent = () => {
 	return (

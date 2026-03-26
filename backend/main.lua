@@ -9,17 +9,33 @@ local smtc = require("smtc")
 --     return "Response from backend"
 -- end
 
-local function on_load()
-    print("Example plugin loaded")
-    logger:info("Comparing millennium version: " .. millennium.cmp_version(millennium.version(), "2.29.3"))
+SMTC = smtc
 
-    logger:info("Example plugin loaded with Millennium version " .. millennium.version())
+local function PlayNext()
+    millennium.call_frontend_method("MusicController.PlayNext")
+end
+
+local function PlayPrevious()
+    millennium.call_frontend_method("MusicController.PlayPrevious")
+end
+
+local function TogglePlayPause()
+    millennium.call_frontend_method("MusicController.TogglePlayPause")
+end
+
+local function on_load()
+    smtc.init()
+
+    print("Plugin loaded")
+
     millennium.ready()
 end
 
 -- Called when your plugin is unloaded. This happens when the plugin is disabled or Steam is shutting down.
 -- NOTE: If Steam crashes or is force closed by task manager, this function may not be called -- so don't rely on it for critical cleanup.
 local function on_unload()
+    smtc.release()
+
     logger:info("Plugin unloaded")
 end
 
