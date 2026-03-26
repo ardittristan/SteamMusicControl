@@ -1,3 +1,4 @@
+---@diagnostic disable: lowercase-global
 local logger = require("logger")
 local millennium = require("millennium")
 local smtc = require("smtc")
@@ -21,6 +22,26 @@ end
 
 local function TogglePlayPause()
     millennium.call_frontend_method("MusicController.TogglePlayPause")
+end
+
+function setup_smtc()
+    -- TODO: this crashes with access violation :(
+
+    -- SMTC.set_is_play_enabled(true)
+    -- SMTC.set_is_stop_enabled(false)
+    -- SMTC.set_is_pause_enabled(true)
+    -- SMTC.set_is_record_enabled(false)
+    -- SMTC.set_is_fastforward_enabled(false)
+    -- SMTC.set_is_rewind_enabled(false)
+    -- SMTC.set_is_previous_enabled(true)
+    -- SMTC.set_is_next_enabled(true)
+    -- SMTC.set_is_channelup_enabled(false)
+    -- SMTC.set_is_channeldown_enabled(false)
+    -- SMTC.set_is_enabled(true)
+    -- SMTC.set_media_type(SMTC.MediaPlaybackType.Music)
+    -- SMTC.update_display_properties()
+
+    -- TODO: listen to buttons and call js methods
 end
 
 local function on_load()
