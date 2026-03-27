@@ -10,8 +10,6 @@ local smtc = require("smtc")
 --     return "Response from backend"
 -- end
 
-SMTC = smtc
-
 local function PlayNext()
     millennium.call_frontend_method("MusicController.PlayNext")
 end
@@ -24,22 +22,29 @@ local function TogglePlayPause()
     millennium.call_frontend_method("MusicController.TogglePlayPause")
 end
 
-function setup_smtc()
-    -- TODO: this crashes with access violation :(
+function SMTC_set_playback_status(status) smtc.set_playback_status(status) end
+function SMTC_update_display_properties() smtc.update_display_properties() end
+function SMTC_set_title(title) smtc.set_title(title) end
+function SMTC_set_album_title(title) smtc.set_album_title(title) end
+function SMTC_set_album_artist(artist) smtc.set_album_artist(artist) end
+function SMTC_set_artist(artist) smtc.set_artist(artist) end
+function SMTC_set_track_number(number) smtc.set_track_number(number) end
 
-    -- SMTC.set_is_play_enabled(true)
-    -- SMTC.set_is_stop_enabled(false)
-    -- SMTC.set_is_pause_enabled(true)
-    -- SMTC.set_is_record_enabled(false)
-    -- SMTC.set_is_fastforward_enabled(false)
-    -- SMTC.set_is_rewind_enabled(false)
-    -- SMTC.set_is_previous_enabled(true)
-    -- SMTC.set_is_next_enabled(true)
-    -- SMTC.set_is_channelup_enabled(false)
-    -- SMTC.set_is_channeldown_enabled(false)
-    -- SMTC.set_is_enabled(true)
-    -- SMTC.set_media_type(SMTC.MediaPlaybackType.Music)
-    -- SMTC.update_display_properties()
+function setup_smtc()
+    smtc.get_is_play_enabled()
+    smtc.set_is_play_enabled(true)
+    smtc.set_is_stop_enabled(false)
+    smtc.set_is_pause_enabled(true)
+    smtc.set_is_record_enabled(false)
+    smtc.set_is_fastforward_enabled(false)
+    smtc.set_is_rewind_enabled(false)
+    smtc.set_is_previous_enabled(true)
+    smtc.set_is_next_enabled(true)
+    smtc.set_is_channelup_enabled(false)
+    smtc.set_is_channeldown_enabled(false)
+    smtc.set_is_enabled(true)
+    smtc.set_media_type(smtc.MediaPlaybackType.Music)
+    smtc.update_display_properties()
 
     -- TODO: listen to buttons and call js methods
 end
@@ -47,7 +52,7 @@ end
 local function on_load()
     smtc.init()
 
-    print("Plugin loaded")
+    logger:info("Plugin loaded")
 
     millennium.ready()
 end

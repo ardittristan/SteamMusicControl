@@ -1,4 +1,4 @@
-import { Millennium, IconsModule, definePlugin, callable, MusicTrack } from '@steambrew/client';
+import { Millennium, IconsModule, definePlugin, callable, MusicTrack, EAudioPlayback } from '@steambrew/client';
 
 // class classname {
 // 	static method(country: string, age: number) {
@@ -21,7 +21,7 @@ class MusicController {
 
 	static TogglePlayPause() {
 		SteamClient.Music.TogglePlayPause();
-		
+
 	}
 }
 Millennium.exposeObj({MusicController});
@@ -33,28 +33,48 @@ Millennium.exposeObj({MusicController});
 // 	console.log(context);
 // }
 
+declare enum SmtcPlaybackStatusEnum {
+	Closed = 0,
+	Changing = 1,
+	Stopped = 2,
+	Playing = 3,
+	Paused = 4
+}
+
+const SmtcPlaybackStatus = {
+	Closed: 0,
+	Changing: 1,
+	Stopped: 2,
+	Playing: 3,
+	Paused: 4
+}
+
 // Declare a function that exists on the backend
 // const backendMethod = callable<[{ message: string; status: boolean; count: number }], boolean>('test_frontend_message_callback');
 const SMTC = {
-	get_playback_status: callable<[], number>("SMTC.get_playback_status"),
-	set_playback_status: callable<[{status: number}], boolean>("SMTC.set_playback_status"),
-	get_is_enabled: callable<[], boolean>("SMTC.get_is_enabled"),
-	set_is_enabled: callable<[{value: boolean}], boolean>("SMTC.set_is_enabled"),
-	get_media_type: callable<[], number>("SMTC.get_media_type"),
-	set_media_type: callable<[{type: number}], boolean>("SMTC.set_media_type"),
-	update_display_properties: callable<[], boolean>("SMTC.update_display_properties"),
-	get_title: callable<[], string>("SMTC.get_title"),
-	set_title: callable<[{title: string}], boolean>("SMTC.set_title"),
-	get_album_title: callable<[], string>("SMTC.get_album_title"),
-	set_album_title: callable<[{title: string}], boolean>("SMTC.set_album_title"),
-	get_album_artist: callable<[], string>("SMTC.get_album_artist"),
-	set_album_artist: callable<[{artist: string}], boolean>("SMTC.set_album_artist"),
-	get_artist: callable<[], string>("SMTC.get_artist"),
-	set_artist: callable<[{artist: string}], boolean>("SMTC.set_artist"),
-	get_track_number: callable<[], string>("SMTC.get_track_number"),
-	set_track_number: callable<[{number: number}], boolean>("SMTC.set_track_number")
+	set_playback_status: callable<[{status: SmtcPlaybackStatusEnum}], boolean>("SMTC_set_playback_status"),
+	update_display_properties: callable<[], boolean>("SMTC_update_display_properties"),
+	set_title: callable<[{title: string}], boolean>("SMTC_set_title"),
+	set_album_title: callable<[{title: string}], boolean>("SMTC_set_album_title"),
+	set_album_artist: callable<[{artist: string}], boolean>("SMTC_set_album_artist"),
+	set_artist: callable<[{artist: string}], boolean>("SMTC_set_artist"),
+	set_track_number: callable<[{number: number}], boolean>("SMTC_set_track_number")
 };
 const setup_smtc = callable<[], void>("setup_smtc");
+
+function SteamToSmtcPlaybackStatus(status: EAudioPlayback) {
+	switch (status) {
+		case EAudioPlayback.Playing:
+			return SmtcPlaybackStatus.Playing;
+		case EAudioPlayback.Paused:
+			return SmtcPlaybackStatus.Paused;
+		case EAudioPlayback.Idle:
+			return SmtcPlaybackStatus.Stopped;
+		case EAudioPlayback.Undefined:
+		default:
+			return SmtcPlaybackStatus.Closed;
+	}
+}
 
 // const SettingsContent = () => {
 // 	return (
@@ -82,13 +102,21 @@ async function MusicPlaybackChange(param0: boolean | MusicTrack) {
 	}
 
 	const status: MusicTrack = param0 as MusicTrack;
+	const albumId = status.uSoundtrackAppId;
+	const trackNum = status.nActiveTrack;
+	const playbackStatus = status.ePlaybackStatus;
 
-	
+	await SMTC.set_playback_status({status: SteamToSmtcPlaybackStatus(playbackStatus)})
+
+	// TODO: these crash for now \/
+
+	// await SMTC.set_album_title({title: albumId.toString()})
+	// await SMTC.set_title({title: trackNum.toString()})
+	// await SMTC.set_track_number({number: trackNum})
+
+	await SMTC.update_display_properties()
+
 	console.log(param0)
-}
-
-function MusicPositionChange(position: number) {
-	console.log(position)
 }
 
 export default definePlugin(() => {
@@ -102,7 +130,6 @@ export default definePlugin(() => {
 	// });
 
 	const playbackChangeCallback = SteamClient.Music.RegisterForMusicPlaybackChanges(MusicPlaybackChange);
-	const positionChangeCallback = SteamClient.Music.RegisterForMusicPlaybackPosition(MusicPositionChange);
 
 	// Millennium.AddWindowCreateHook(windowCreated);
 
@@ -111,8 +138,8 @@ export default definePlugin(() => {
 		icon: <IconsModule.Settings />,
 		// content: <SettingsContent />,
 		onDismount: () => {
+			firstMusicPlayed = false;
 			playbackChangeCallback.unregister();
-			positionChangeCallback.unregister();
 		}
 	};
 });
