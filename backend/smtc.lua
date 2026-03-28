@@ -124,28 +124,17 @@ local SMTC = {
 
 ---@alias vtable {lpVtbl: unknown}
 
----@type ffi.cdata*
-local pFactory = nil
 ---@type vtable
 local factory = nil
----@type ffi.cdata*
-local pSmtci = nil
 ---@type vtable
 local smtci = nil
 local window = nil
----@type ffi.cdata*
-local pSmtc = nil
 ---@type vtable
 local smtc = nil
----@type ffi.cdata*
-local pSmtc_display_updater = nil
 ---@type vtable
 local smtc_display_updater = nil
----@type ffi.cdata*
-local pSmtc_music_properties = nil
 ---@type vtable
 local smtc_music_properties = nil
-local pSmtc_music_properties2 = nil
 ---@type vtable
 local smtc_music_properties2 = nil
 
@@ -160,7 +149,7 @@ function SMTC.init()
         hr = winrt_string.WindowsCreateString(media_control_statics_name, 42, media_control_statics_name_hstring)
         logger:info(string.format("WindowsCreateString hr = 0x%08X", hr))
 
-        pFactory = ffi.new("void*[1]")
+        local pFactory = ffi.new("void*[1]")
         hr = combase.RoGetActivationFactory(media_control_statics_name_hstring[0], IID_IActivationFactory, pFactory)
         factory = ffi.cast("IActivationFactory*", pFactory[0])
         logger:info(string.format("RoGetActivationFactory hr = 0x%08X", hr))
@@ -170,7 +159,7 @@ function SMTC.init()
     end
 
     if smtci == nil then
-        pSmtci = ffi.new("void*[1]")
+        local pSmtci = ffi.new("void*[1]")
         hr = factory.lpVtbl.QueryInterface(factory, IID_ISystemMediaTransportControlsInterop, pSmtci)
         smtci = ffi.cast("ISystemMediaTransportControlsInterop*", pSmtci[0])
         logger:info(string.format("IActivationFactory_QueryInterface hr = 0x%08X", hr))
@@ -181,14 +170,14 @@ function SMTC.init()
     end
 
     if smtc == nil then
-        pSmtc = ffi.new("void*[1]")
+        local pSmtc = ffi.new("void*[1]")
         hr = smtci.lpVtbl.GetForWindow(smtci, window, IID_ISystemMediaTransportControls, pSmtc)
         smtc = ffi.cast("ISystemMediaTransportControls*", pSmtc[0])
         logger:info(string.format("ISystemMediaTransportControlsInterop_GetForWindow hr = 0x%08X", hr))
     end
 
     if smtc_display_updater == nil then
-        pSmtc_display_updater = ffi.new("ISystemMediaTransportControlsDisplayUpdater*[1]")
+        local pSmtc_display_updater = ffi.new("ISystemMediaTransportControlsDisplayUpdater*[1]")
         hr = smtc.lpVtbl.get_DisplayUpdater(smtc, pSmtc_display_updater)
         smtc_display_updater = pSmtc_display_updater[0]
         logger:info(string.format("ISystemMediaTransportControls_get_DisplayUpdater hr = 0x%08X", hr))
@@ -244,7 +233,7 @@ local function ensure_music_properties()
     if smtc_music_properties ~= nil then
         return true
     end
-    pSmtc_music_properties = ffi.new("IMusicDisplayProperties*[1]")
+    local pSmtc_music_properties = ffi.new("IMusicDisplayProperties*[1]")
     local hr = smtc_display_updater.lpVtbl.get_MusicProperties(smtc_display_updater, pSmtc_music_properties)
     logger:info(string.format("ISystemMediaTransportControlsDisplayUpdater_get_MusicProperties hr = 0x%08X", hr))
     if hr ~= 0 then
@@ -253,6 +242,7 @@ local function ensure_music_properties()
     smtc_music_properties = pSmtc_music_properties[0]
     return true
 end
+function SMTC.ensure_music_properties() ensure_music_properties() end
 
 local function ensure_music_properties2()
     if smtc_music_properties2 ~= nil then
@@ -261,7 +251,7 @@ local function ensure_music_properties2()
     if not ensure_music_properties() then
         return false
     end
-    pSmtc_music_properties2 = ffi.new("IMusicDisplayProperties2*[1]")
+    local pSmtc_music_properties2 = ffi.new("IMusicDisplayProperties2*[1]")
     local hr = smtc_music_properties.lpVtbl.QueryInterface(smtc_music_properties, IID_IMusicDisplayProperties2, pSmtc_music_properties2)
     logger:info(string.format("IMusicDisplayProperties_QueryInterface hr = 0x%08X", hr))
     if hr ~= 0 then
@@ -270,6 +260,7 @@ local function ensure_music_properties2()
     smtc_music_properties2 = pSmtc_music_properties2[0]
     return true
 end
+function SMTC.ensure_music_properties2() ensure_music_properties2() end
 
 function SMTC.get_playback_status()
     local ret = ffi.new("MediaPlaybackStatus[1]")

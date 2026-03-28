@@ -58,7 +58,8 @@ const SMTC = {
 	set_album_title: callable<[{title: string}], boolean>("SMTC_set_album_title"),
 	set_album_artist: callable<[{artist: string}], boolean>("SMTC_set_album_artist"),
 	set_artist: callable<[{artist: string}], boolean>("SMTC_set_artist"),
-	set_track_number: callable<[{number: number}], boolean>("SMTC_set_track_number")
+	set_track_number: callable<[{number: number}], boolean>("SMTC_set_track_number"),
+	get_album_title: callable<[], boolean>("SMTC_get_album_title"),
 };
 const setup_smtc = callable<[], void>("setup_smtc");
 
@@ -110,6 +111,7 @@ async function MusicPlaybackChange(param0: boolean | MusicTrack) {
 
 	// TODO: these crash for now \/
 
+	// console.log(await SMTC.get_album_title())
 	// await SMTC.set_album_title({title: albumId.toString()})
 	// await SMTC.set_title({title: trackNum.toString()})
 	// await SMTC.set_track_number({number: trackNum})

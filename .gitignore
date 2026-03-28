@@ -1,3 +1,5 @@
 node_modules/
 .millennium/
 pnpm-lock.yaml
+backend_test/.idea
+backend_test/cmake-build-debug-visual-studio
