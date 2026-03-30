@@ -33,7 +33,7 @@ typedef int BOOL;
 typedef unsigned long ULONG;
 typedef unsigned int UINT32;
 typedef signed long long INT64;
-typedef const wchar_t PCWSTR;
+typedef const wchar_t* PCWSTR;
 typedef const wchar_t* LPCWSTR;
 typedef const char* LPCSTR;
 typedef unsigned long DWORD;

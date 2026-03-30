@@ -29,6 +29,7 @@ function SMTC_set_album_title(title) smtc.set_album_title(title) end
 function SMTC_set_album_artist(artist) smtc.set_album_artist(artist) end
 function SMTC_set_artist(artist) smtc.set_artist(artist) end
 function SMTC_set_track_number(number) smtc.set_track_number(number) end
+function SMTC_set_display(title, artist) smtc.set_display(title, artist) end
 
 
 function SMTC_get_album_title() smtc.get_album_title() end
@@ -45,10 +46,6 @@ function setup_smtc()
     smtc.set_is_channelup_enabled(false)
     smtc.set_is_channeldown_enabled(false)
     smtc.set_is_enabled(true)
-    smtc.set_media_type(smtc.MediaPlaybackType.Music)
-    smtc.update_display_properties()
-
-    smtc.ensure_music_properties2()
 
     -- TODO: listen to buttons and call js methods
 end

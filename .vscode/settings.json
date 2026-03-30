@@ -1,5 +1,6 @@
 {
     "Lua.runtime.builtin": {
         "ffi": "enable"
-    }
+    },
+    "cmake.sourceDirectory": "${workspaceFolder}/backend_test"
 }

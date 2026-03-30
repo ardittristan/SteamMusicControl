@@ -8,6 +8,16 @@ local winrt_core = ffi.load("api-ms-win-core-winrt-l1-1-0.dll")
 
 require("smtc_h")
 
+local hstring = ffi.typeof("HSTRING[1]")
+local voidptr = ffi.typeof("void*[1]")
+local IID = ffi.typeof("IID")
+local boolean = ffi.typeof("boolean[1]")
+local ISystemMediaTransportControlsDisplayUpdaterPtr = ffi.typeof("ISystemMediaTransportControlsDisplayUpdater*[1]")
+local MediaPlaybackType = ffi.typeof("MediaPlaybackType[1]")
+local IMusicDisplayPropertiesPtr = ffi.typeof("IMusicDisplayProperties*[1]")
+local IMusicDisplayProperties2Ptr_Raw = ffi.typeof("IMusicDisplayProperties2*")
+
+
 ---@param ws ffi.cdata*
 local function wcslen(ws)
     return tonumber(msvcrt.wcslen(ffi.cast("const wchar_t*", ws)))
@@ -48,28 +58,28 @@ local function bool_to_num(value)
     return value and 1 or 0
 end
 
-local IID_ISystemMediaTransportControls = ffi.new("IID", {
+local IID_ISystemMediaTransportControls = IID({
     Data1 = 0x99fa3ff4,
     Data2 = 0x1742,
     Data3 = 0x42a6,
     Data4 = {0x90,0x2e, 0x08,0x7d,0x41,0xf9,0x65,0xec}
 })
 
-local IID_ISystemMediaTransportControlsInterop = ffi.new("IID", {
+local IID_ISystemMediaTransportControlsInterop = IID({
     Data1 = 0xddb0472d,
     Data2 = 0xc911,
     Data3 = 0x4a1f,
     Data4 = {0x86,0xd9, 0xdc,0x3d,0x71,0xa9,0x5f,0x5a}
 })
 
-local IID_IActivationFactory = ffi.new("IID", {
+local IID_IActivationFactory = IID({
     Data1 = 0x00000035,
     Data2 = 0x0000,
     Data3 = 0x0000,
     Data4 = {0xc0,0x00, 0x00,0x00,0x00,0x00,0x00,0x46}
 })
 
-local IID_IMusicDisplayProperties2 = ffi.new("IID", {
+local IID_IMusicDisplayProperties2 = IID({
     Data1 = 0x00368462,
     Data2 = 0x97d3,
     Data3 = 0x44b9,
@@ -144,12 +154,12 @@ function SMTC.init()
 
     if factory == nil then
         local media_control_statics_name = str2cwstr("Windows.Media.SystemMediaTransportControls")
-        local media_control_statics_name_hstring = ffi.new("HSTRING[1]")
+        local media_control_statics_name_hstring = hstring()
 
         hr = winrt_string.WindowsCreateString(media_control_statics_name, 42, media_control_statics_name_hstring)
         logger:info(string.format("WindowsCreateString hr = 0x%08X", hr))
 
-        local pFactory = ffi.new("void*[1]")
+        local pFactory = voidptr()
         hr = combase.RoGetActivationFactory(media_control_statics_name_hstring[0], IID_IActivationFactory, pFactory)
         factory = ffi.cast("IActivationFactory*", pFactory[0])
         logger:info(string.format("RoGetActivationFactory hr = 0x%08X", hr))
@@ -159,7 +169,7 @@ function SMTC.init()
     end
 
     if smtci == nil then
-        local pSmtci = ffi.new("void*[1]")
+        local pSmtci = voidptr()
         hr = factory.lpVtbl.QueryInterface(factory, IID_ISystemMediaTransportControlsInterop, pSmtci)
         smtci = ffi.cast("ISystemMediaTransportControlsInterop*", pSmtci[0])
         logger:info(string.format("IActivationFactory_QueryInterface hr = 0x%08X", hr))
@@ -170,19 +180,79 @@ function SMTC.init()
     end
 
     if smtc == nil then
-        local pSmtc = ffi.new("void*[1]")
+        local pSmtc = voidptr()
         hr = smtci.lpVtbl.GetForWindow(smtci, window, IID_ISystemMediaTransportControls, pSmtc)
         smtc = ffi.cast("ISystemMediaTransportControls*", pSmtc[0])
         logger:info(string.format("ISystemMediaTransportControlsInterop_GetForWindow hr = 0x%08X", hr))
     end
 
-    if smtc_display_updater == nil then
-        local pSmtc_display_updater = ffi.new("ISystemMediaTransportControlsDisplayUpdater*[1]")
-        hr = smtc.lpVtbl.get_DisplayUpdater(smtc, pSmtc_display_updater)
-        smtc_display_updater = pSmtc_display_updater[0]
-        logger:info(string.format("ISystemMediaTransportControls_get_DisplayUpdater hr = 0x%08X", hr))
+    local pSmtc_display_updater = ffi.new("ISystemMediaTransportControlsDisplayUpdater*[1]")
+    hr = smtc.lpVtbl.get_DisplayUpdater(smtc, pSmtc_display_updater)
+    smtc_display_updater = pSmtc_display_updater[0]
+    logger:info(string.format("ISystemMediaTransportControls_get_DisplayUpdater hr = 0x%08X", hr))
+
+    -- SMTC.set_media_type(SMTC.MediaPlaybackType.Music)
+    -- SMTC.update_display_properties()
+
+    -- smtc.get_title()
+    -- SMTC.set_display(nil)
+
+    
+
+end
+
+---@param title string
+---@param artist string
+function SMTC.set_display(title, artist)
+    local cTitle = str2cwstr(title)
+    local cTitleLen = msvcrt.wcslen(cTitle)
+    logger:info(string.format("cTitleLen = 0x%08X", cTitleLen))
+    local cArtist = str2cwstr(artist)
+    local pHstring = hstring()
+
+    local pSmtc_display_updater = ISystemMediaTransportControlsDisplayUpdaterPtr()
+    local hr = smtc.lpVtbl.get_DisplayUpdater(smtc, pSmtc_display_updater)
+    local smtc_display_updater = pSmtc_display_updater[0]
+    logger:info(string.format("ISystemMediaTransportControls_get_DisplayUpdater hr = 0x%08X", hr))
+
+    local mediaType = MediaPlaybackType()
+    smtc_display_updater.lpVtbl.get_Type(smtc_display_updater, mediaType)
+
+    if mediaType ~= SMTC.MediaPlaybackType.Music then
+        smtc_display_updater.lpVtbl.put_Type(smtc_display_updater, SMTC.MediaPlaybackType.Music)
+        smtc_display_updater.lpVtbl.Update(smtc_display_updater)
     end
 
+    local pSmtc_music_properties = IMusicDisplayPropertiesPtr()
+    hr = smtc_display_updater.lpVtbl.get_MusicProperties(smtc_display_updater, pSmtc_music_properties)
+    local smtc_music_properties = pSmtc_music_properties[0]
+    logger:info(string.format("ISystemMediaTransportControlsDisplayUpdater_get_MusicProperties hr = 0x%08X", hr))
+
+    local pSmtc_music_properties2 = voidptr()
+    hr = smtc_music_properties.lpVtbl.QueryInterface(smtc_music_properties, IID_IMusicDisplayProperties2, pSmtc_music_properties2)
+    logger:info(string.format("IMusicDisplayProperties_QueryInterface hr = 0x%08X", hr))
+    local smtc_music_properties2 = ffi.cast(IMusicDisplayProperties2Ptr_Raw, pSmtc_music_properties2[0])
+
+    --- put title
+    hr = winrt_string.WindowsCreateString(cTitle, msvcrt.wcslen(cTitle), pHstring)
+    logger:info(string.format("put title WindowsCreateString hr = 0x%08X", hr))
+    hr = smtc_music_properties.lpVtbl.put_Title(smtc_music_properties, pHstring[0])
+    winrt_string.WindowsDeleteString(pHstring[0])
+    logger:info(string.format("put_Title hr = 0x%08X", hr))
+    -- end put title
+
+    --- put artist
+    hr = winrt_string.WindowsCreateString(cArtist, msvcrt.wcslen(cArtist), pHstring)
+    logger:info(string.format("put artist WindowsCreateString hr = 0x%08X", hr))
+    hr = smtc_music_properties.lpVtbl.put_Artist(smtc_music_properties, pHstring[0])
+    winrt_string.WindowsDeleteString(pHstring[0])
+    logger:info(string.format("put_Artist hr = 0x%08X", hr))
+    -- end put artist
+
+    smtc_display_updater.lpVtbl.Update(smtc_display_updater)
+
+    smtc_music_properties.lpVtbl.Release(smtc_music_properties)
+    smtc_display_updater.lpVtbl.Release(smtc_display_updater)
 end
 
 ---@diagnostic disable: cast-local-type
@@ -251,13 +321,13 @@ local function ensure_music_properties2()
     if not ensure_music_properties() then
         return false
     end
-    local pSmtc_music_properties2 = ffi.new("IMusicDisplayProperties2*[1]")
+    local pSmtc_music_properties2 = voidptr()
     local hr = smtc_music_properties.lpVtbl.QueryInterface(smtc_music_properties, IID_IMusicDisplayProperties2, pSmtc_music_properties2)
     logger:info(string.format("IMusicDisplayProperties_QueryInterface hr = 0x%08X", hr))
     if hr ~= 0 then
         return false
     end
-    smtc_music_properties2 = pSmtc_music_properties2[0]
+    smtc_music_properties2 = ffi.cast("IMusicDisplayProperties2*", pSmtc_music_properties2[0])
     return true
 end
 function SMTC.ensure_music_properties2() ensure_music_properties2() end
@@ -274,7 +344,7 @@ function SMTC.set_playback_status(status)
 end
 
 function SMTC.get_is_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -285,7 +355,7 @@ function SMTC.set_is_enabled(value)
 end
 
 function SMTC.get_is_play_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsPlayEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -296,7 +366,7 @@ function SMTC.set_is_play_enabled(value)
 end
 
 function SMTC.get_is_stop_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsStopEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -307,7 +377,7 @@ function SMTC.set_is_stop_enabled(value)
 end
 
 function SMTC.get_is_pause_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsPauseEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -318,7 +388,7 @@ function SMTC.set_is_pause_enabled(value)
 end
 
 function SMTC.get_is_record_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsRecordEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -329,7 +399,7 @@ function SMTC.set_is_record_enabled(value)
 end
 
 function SMTC.get_is_fastforward_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsFastForwardEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -340,7 +410,7 @@ function SMTC.set_is_fastforward_enabled(value)
 end
 
 function SMTC.get_is_rewind_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsRewindEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -351,7 +421,7 @@ function SMTC.set_is_rewind_enabled(value)
 end
 
 function SMTC.get_is_previous_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsPreviousEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -362,7 +432,7 @@ function SMTC.set_is_previous_enabled(value)
 end
 
 function SMTC.get_is_next_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsNextEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -373,7 +443,7 @@ function SMTC.set_is_next_enabled(value)
 end
 
 function SMTC.get_is_channelup_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsChannelUpEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -384,7 +454,7 @@ function SMTC.set_is_channelup_enabled(value)
 end
 
 function SMTC.get_is_channeldown_enabled()
-    local ret = ffi.new("boolean[1]")
+    local ret = boolean()
     smtc.lpVtbl.get_IsChannelDownEnabled(smtc, ret)
     return ret[0] ~= 0
 end
@@ -414,7 +484,7 @@ function SMTC.get_title()
     if not ensure_music_properties() then
         return nil
     end
-    local retHstring = ffi.new("HSTRING[1]")
+    local retHstring = hstring()
     smtc_music_properties.lpVtbl.get_Title(smtc_music_properties, retHstring)
     local ret = wstr2str(winrt_string.WindowsGetStringRawBuffer(retHstring[0], nil))
     winrt_string.WindowsDeleteString(retHstring[0])
@@ -427,7 +497,7 @@ function SMTC.set_title(title)
         return false
     end
     local cwstring = str2cwstr(title)
-    local hstring = ffi.new("HSTRING[1]")
+    local hstring = hstring()
 
     local hr = winrt_string.WindowsCreateString(cwstring, hstring)
     logger:info(string.format("set_title WindowsCreateString hr = 0x%08X", hr))
@@ -441,7 +511,7 @@ function SMTC.get_album_title()
     if not ensure_music_properties2() then
         return nil
     end
-    local retHstring = ffi.new("HSTRING[1]")
+    local retHstring = hstring()
     smtc_music_properties2.lpVtbl.get_AlbumTitle(smtc_music_properties2, retHstring)
     local ret = wstr2str(winrt_string.WindowsGetStringRawBuffer(retHstring[0], nil))
     winrt_string.WindowsDeleteString(retHstring[0])
@@ -454,7 +524,7 @@ function SMTC.set_album_title(title)
         return false
     end
     local cwstring = str2cwstr(title)
-    local hstring = ffi.new("HSTRING[1]")
+    local hstring = hstring()
 
     local hr = winrt_string.WindowsCreateString(cwstring, hstring)
     logger:info(string.format("set_album_title WindowsCreateString hr = 0x%08X", hr))
@@ -468,7 +538,7 @@ function SMTC.get_album_artist()
     if not ensure_music_properties() then
         return nil
     end
-    local retHstring = ffi.new("HSTRING[1]")
+    local retHstring = hstring()
     smtc_music_properties.lpVtbl.get_AlbumArtist(smtc_music_properties, retHstring)
     local ret = wstr2str(winrt_string.WindowsGetStringRawBuffer(retHstring[0], nil))
     winrt_string.WindowsDeleteString(retHstring[0])
@@ -481,7 +551,7 @@ function SMTC.set_album_artist(artist)
         return false
     end
     local cwstring = str2cwstr(artist)
-    local hstring = ffi.new("HSTRING[1]")
+    local hstring = hstring()
 
     local hr = winrt_string.WindowsCreateString(cwstring, hstring)
     logger:info(string.format("set_album_artist WindowsCreateString hr = 0x%08X", hr))
@@ -495,7 +565,7 @@ function SMTC.get_artist()
     if not ensure_music_properties() then
         return nil
     end
-    local retHstring = ffi.new("HSTRING[1]")
+    local retHstring = hstring()
     smtc_music_properties.lpVtbl.get_Artist(smtc_music_properties, retHstring)
     local ret = wstr2str(winrt_string.WindowsGetStringRawBuffer(retHstring[0], nil))
     winrt_string.WindowsDeleteString(retHstring[0])
@@ -508,7 +578,7 @@ function SMTC.set_artist(artist)
         return false
     end
     local cwstring = str2cwstr(artist)
-    local hstring = ffi.new("HSTRING[1]")
+    local hstring = hstring()
 
     local hr = winrt_string.WindowsCreateString(cwstring, hstring)
     logger:info(string.format("set_artist WindowsCreateString hr = 0x%08X", hr))
@@ -522,7 +592,7 @@ function SMTC.get_track_number()
     if not ensure_music_properties2() then
         return nil
     end
-    local retHstring = ffi.new("HSTRING[1]")
+    local retHstring = hstring()
     smtc_music_properties2.lpVtbl.get_TrackNumber(smtc_music_properties2, retHstring)
     local ret = wstr2str(winrt_string.WindowsGetStringRawBuffer(retHstring[0], nil))
     winrt_string.WindowsDeleteString(retHstring[0])
@@ -535,7 +605,7 @@ function SMTC.set_track_number(number)
         return false
     end
     local cwstring = str2cwstr(number)
-    local hstring = ffi.new("HSTRING[1]")
+    local hstring = hstring()
 
     local hr = winrt_string.WindowsCreateString(cwstring, hstring)
     logger:info(string.format("set_track_number WindowsCreateString hr = 0x%08X", hr))
