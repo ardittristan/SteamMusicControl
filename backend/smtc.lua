@@ -171,6 +171,9 @@ function SMTC.init()
         logger:info(string.format("ISystemMediaTransportControlsInterop_GetForWindow hr = 0x%08X", hr))
     end
 
+-- event handler: https://github.com/FoxCouncil/OrgZ/blob/faed618017d4f6389e795e4f635d2566dc9d7929/Services/SmtcService.cs#L223
+-- https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/implementing-iunknown-in-c
+
 end
 
 ---@param title string
