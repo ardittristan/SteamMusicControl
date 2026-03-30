@@ -261,7 +261,6 @@ HRESULT __stdcall WindowsCreateString(LPCWSTR sourceString, UINT32 length, HSTRI
 HRESULT __stdcall WindowsDeleteString(HSTRING string);
 PCWSTR __stdcall WindowsGetStringRawBuffer(HSTRING string, UINT32* length);
 size_t __cdecl mbstowcs(wchar_t* w, const char* s, size_t c);
-size_t __cdecl wcstombs(char* s, const wchar_t* w, size_t c);
 size_t __cdecl wcslen(const wchar_t* s);
 HRESULT __stdcall RoGetActivationFactory(HSTRING activatableClassId, REFIID iid, void** factory);
 HRESULT __stdcall RoInitialize(RO_INIT_TYPE initType);

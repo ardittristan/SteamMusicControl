@@ -3,13 +3,6 @@ local logger = require("logger")
 local millennium = require("millennium")
 local smtc = require("smtc")
 
--- function test_frontend_message_callback(message, status, count)
---     logger:info("test_frontend_message_callback called")
---     logger:info("Received args: " .. table.concat({message, tostring(status), tostring(count)}, ", "))
-
---     return "Response from backend"
--- end
-
 local function PlayNext()
     millennium.call_frontend_method("MusicController.PlayNext")
 end
@@ -23,16 +16,7 @@ local function TogglePlayPause()
 end
 
 function SMTC_set_playback_status(status) smtc.set_playback_status(status) end
-function SMTC_update_display_properties() smtc.update_display_properties() end
-function SMTC_set_title(title) smtc.set_title(title) end
-function SMTC_set_album_title(title) smtc.set_album_title(title) end
-function SMTC_set_album_artist(artist) smtc.set_album_artist(artist) end
-function SMTC_set_artist(artist) smtc.set_artist(artist) end
-function SMTC_set_track_number(number) smtc.set_track_number(number) end
-function SMTC_set_display(title, artist) smtc.set_display(title, artist) end
-
-
-function SMTC_get_album_title() smtc.get_album_title() end
+function SMTC_set_display(title, artist, album_title, album_artist, track_number) smtc.set_display(title, artist, album_title, album_artist, track_number) end
 
 function setup_smtc()
     smtc.set_is_play_enabled(true)

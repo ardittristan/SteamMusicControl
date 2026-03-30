@@ -49,20 +49,9 @@ const SmtcPlaybackStatus = {
 	Paused: 4
 }
 
-// Declare a function that exists on the backend
-// const backendMethod = callable<[{ message: string; status: boolean; count: number }], boolean>('test_frontend_message_callback');
-const SMTC = {
-	set_playback_status: callable<[{status: SmtcPlaybackStatusEnum}], boolean>("SMTC_set_playback_status"),
-	update_display_properties: callable<[], boolean>("SMTC_update_display_properties"),
-	set_title: callable<[{title: string}], boolean>("SMTC_set_title"),
-	set_album_title: callable<[{title: string}], boolean>("SMTC_set_album_title"),
-	set_album_artist: callable<[{artist: string}], boolean>("SMTC_set_album_artist"),
-	set_artist: callable<[{artist: string}], boolean>("SMTC_set_artist"),
-	set_track_number: callable<[{number: number}], boolean>("SMTC_set_track_number"),
-	get_album_title: callable<[], boolean>("SMTC_get_album_title"),
-	set_display: callable<[{title: string, artist: string}], void>("SMTC_set_display"),
-};
 const setup_smtc = callable<[], void>("setup_smtc");
+const set_playback_status = callable<[{status: SmtcPlaybackStatusEnum}], void>("SMTC_set_playback_status");
+const set_display = callable<[{title: string, artist: string, album_title: string | undefined, album_artist: string | undefined, track_number: string | undefined}], void>("SMTC_set_display");
 
 function SteamToSmtcPlaybackStatus(status: EAudioPlayback) {
 	switch (status) {
@@ -108,17 +97,16 @@ async function MusicPlaybackChange(param0: boolean | MusicTrack) {
 	const trackNum = status.nActiveTrack;
 	const playbackStatus = status.ePlaybackStatus;
 
-	await SMTC.set_playback_status({status: SteamToSmtcPlaybackStatus(playbackStatus)})
+	await set_playback_status({status: SteamToSmtcPlaybackStatus(playbackStatus)})
 
 	// TODO: these crash for now \/
 
-	// console.log(await SMTC.get_album_title())
-	// await SMTC.set_album_title({title: albumId.toString()})
-	// await SMTC.set_title({title: trackNum.toString()})
-	// await SMTC.set_track_number({number: trackNum})
-	await SMTC.set_display({
+	await set_display({
 		title: "Track " + trackNum.toString(),
-		artist: "test2"
+		artist: "test2",
+		album_title: "test",
+		album_artist: "test",
+		track_number: "2"
 	})
 
 	// await SMTC.update_display_properties()
