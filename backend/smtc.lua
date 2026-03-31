@@ -211,7 +211,7 @@ local buttonPressedInvoke = ffi.cast(
 
         local pressedButton = pressedButtonPtr[0] or 0
 
-        -- if this is commented out the plugin unloads itself at this moment
+        -- if this is commented out the plugin unloads itself after leaving this function scope
         -- millennium.call_frontend_method("MusicController.TogglePlayPause")
 
         if pressedButton == SMTC.SystemMediaTransportControlsButton.Play or pressedButton == SMTC.SystemMediaTransportControlsButton.Pause then
