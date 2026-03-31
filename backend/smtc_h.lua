@@ -30,6 +30,7 @@ typedef void* HMENU;
 typedef const void* REFIID;
 typedef long HRESULT;
 typedef int BOOL;
+typedef long LONG;
 typedef unsigned long ULONG;
 typedef unsigned int UINT32;
 typedef signed long long INT64;
@@ -206,7 +207,10 @@ typedef struct SystemMediaTransportControlsButtonPressedEventArgsVtbl {
     ULONG (__stdcall *Release)(SystemMediaTransportControlsButtonPressedEventArgs*);
     HRESULT (__stdcall *Invoke)(SystemMediaTransportControlsButtonPressedEventArgs*, ISystemMediaTransportControls*, ISystemMediaTransportControlsButtonPressedEventArgs*);
 } SystemMediaTransportControlsButtonPressedEventArgsVtbl;
-struct SystemMediaTransportControlsButtonPressedEventArgs { SystemMediaTransportControlsButtonPressedEventArgsVtbl* lpVtbl; };
+struct SystemMediaTransportControlsButtonPressedEventArgs {
+    SystemMediaTransportControlsButtonPressedEventArgsVtbl* lpVtbl;
+    int cRef;
+};
 
 typedef struct SystemMediaTransportControlsPropertyChangedEventArgs SystemMediaTransportControlsPropertyChangedEventArgs;
 typedef struct SystemMediaTransportControlsPropertyChangedEventArgsVtbl {
@@ -262,6 +266,9 @@ HRESULT __stdcall WindowsDeleteString(HSTRING string);
 PCWSTR __stdcall WindowsGetStringRawBuffer(HSTRING string, UINT32* length);
 size_t __cdecl mbstowcs(wchar_t* w, const char* s, size_t c);
 size_t __cdecl wcslen(const wchar_t* s);
+int __cdecl memcmp(const void* buf1, const void *buf2, size_t size);
+void* __cdecl calloc(size_t num, size_t size);
+void __cdecl free(void* addr);
 HRESULT __stdcall RoGetActivationFactory(HSTRING activatableClassId, REFIID iid, void** factory);
 HRESULT __stdcall RoInitialize(RO_INIT_TYPE initType);
 void __stdcall RoUninitialize(void);

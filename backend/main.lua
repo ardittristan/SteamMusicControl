@@ -3,18 +3,6 @@ local logger = require("logger")
 local millennium = require("millennium")
 local smtc = require("smtc")
 
-local function PlayNext()
-    millennium.call_frontend_method("MusicController.PlayNext")
-end
-
-local function PlayPrevious()
-    millennium.call_frontend_method("MusicController.PlayPrevious")
-end
-
-local function TogglePlayPause()
-    millennium.call_frontend_method("MusicController.TogglePlayPause")
-end
-
 function SMTC_set_playback_status(status) smtc.set_playback_status(status) end
 function SMTC_set_display(title, artist, album_title, album_artist, track_number) smtc.set_display(title, artist, album_title, album_artist, track_number) end
 
