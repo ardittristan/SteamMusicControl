@@ -12,9 +12,9 @@
 		"@types/webpack": "^5.28.5"
 	},
 	"type": "module",
-	"name": "millennium-plugin",
+	"name": "steam-music-control",
 	"version": "1.0.0",
-	"description": "A template plugin for millennium",
+	"description": "Integrate Steam music with Windows music controls.",
 	"main": "./frontend/index.jsx",
 	"author": "Millennium",
 	"license": "MIT",
@@ -22,6 +22,7 @@
 		"@steambrew/api": "^5.8.4",
 		"@steambrew/client": "^5.8.4",
 		"@steambrew/ttc": "^3.2.6",
-		"@steambrew/webkit": "^5.8.4"
+		"@steambrew/webkit": "^5.8.4",
+		"any-ascii": "^0.3.3"
 	}
 }

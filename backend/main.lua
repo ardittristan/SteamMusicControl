@@ -6,7 +6,7 @@ local smtc = require("smtc")
 function SMTC_set_playback_status(status) smtc.set_playback_status(status) end
 function SMTC_set_display(title, artist, album_title, album_artist, track_number) smtc.set_display(title, artist, album_title, album_artist, track_number) end
 
-function setup_smtc()
+function SMTC_setup()
     smtc.set_is_play_enabled(true)
     smtc.set_is_stop_enabled(false)
     smtc.set_is_pause_enabled(true)
@@ -18,8 +18,25 @@ function setup_smtc()
     smtc.set_is_channelup_enabled(false)
     smtc.set_is_channeldown_enabled(false)
     smtc.set_is_enabled(true)
+end
 
-    -- TODO: listen to buttons and call js methods
+local function pressed_button_event_loop()
+    local pressedButton = smtc.get_pressed_button()
+    if pressedButton == -1 then return end
+
+    if pressedButton == smtc.SystemMediaTransportControlsButton.Play or pressedButton == smtc.SystemMediaTransportControlsButton.Pause then
+        millennium.call_frontend_method("MusicController.TogglePlayPause")
+    elseif pressedButton == smtc.SystemMediaTransportControlsButton.Next then
+        millennium.call_frontend_method("MusicController.PlayNext")
+    elseif pressedButton == smtc.SystemMediaTransportControlsButton.Previous then
+        millennium.call_frontend_method("MusicController.PlayPrevious")
+    end
+
+    logger:info("Pressed button " .. pressedButton)
+end
+
+function SMTC_event_loop()
+    pressed_button_event_loop()
 end
 
 local function on_load()

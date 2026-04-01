@@ -1,14 +1,11 @@
-import { Millennium, IconsModule, definePlugin, callable, MusicTrack, EAudioPlayback } from '@steambrew/client';
+import { Millennium, IconsModule, definePlugin, callable, MusicTrack, EAudioPlayback, Field, TextField, SteamAppOverview } from '@steambrew/client';
+import anyAscii from "any-ascii"
 
-// class classname {
-// 	static method(country: string, age: number) {
-// 		console.log(`age: ${age}, country: ${country}`);
-// 		return 'method called';
-// 	}
-// }
+const localStorageKey = "ardittristan.SteamMusicControl.config";
 
-// export classname class to global context
-// Millennium.exposeObj({ classname });
+let pluginConfig = {
+	buttonPollInterval: 50
+}
 
 class MusicController {
 	static PlayNext() {
@@ -26,13 +23,6 @@ class MusicController {
 }
 Millennium.exposeObj({MusicController});
 
-// function windowCreated(context: any) {
-// 	// window create event.
-// 	// you can interact directly with the document and monitor it with dom observers
-// 	// you can then render components in specific pages.
-// 	console.log(context);
-// }
-
 declare enum SmtcPlaybackStatusEnum {
 	Closed = 0,
 	Changing = 1,
@@ -49,9 +39,10 @@ const SmtcPlaybackStatus = {
 	Paused: 4
 }
 
-const setup_smtc = callable<[], void>("setup_smtc");
+const lua_event_loop = callable<[], void>("SMTC_event_loop");
+const setup_smtc = callable<[], void>("SMTC_setup");
 const set_playback_status = callable<[{status: SmtcPlaybackStatusEnum}], void>("SMTC_set_playback_status");
-const set_display = callable<[{title: string, artist: string, album_title: string | undefined, album_artist: string | undefined, track_number: string | undefined}], void>("SMTC_set_display");
+const set_display = callable<[{album_artist: string; album_title: string; song_artist: string; song_title: string; track_number: string}], void>("SMTC_set_display");
 
 function SteamToSmtcPlaybackStatus(status: EAudioPlayback) {
 	switch (status) {
@@ -67,21 +58,31 @@ function SteamToSmtcPlaybackStatus(status: EAudioPlayback) {
 	}
 }
 
-// const SettingsContent = () => {
-// 	return (
-// 		<Field label="Plugin Settings" description="This is a description of the plugin settings." icon={<IconsModule.Settings />} bottomSeparator="standard" focusable>
-// 			<DialogButton
-// 				onClick={() => {
-// 					console.log('Button clicked!');
-// 				}}
-// 			>
-// 				Click Me
-// 			</DialogButton>
-// 		</Field>
-// 	);
-// };
+const SettingsContent = () => {
+	const saveConfig = () => {
+		localStorage.setItem(localStorageKey, JSON.stringify(pluginConfig))
+	}
+
+	return (
+		<Field label="Button poll interval" description="How often (in ms) to check for play/next/previous button presses" icon={<IconsModule.Settings />} bottomSeparator="standard" focusable>
+			<TextField
+				defaultValue={pluginConfig.buttonPollInterval}
+				mustBeNumeric={true}
+				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>  {
+					let value = parseInt(e.currentTarget.value);
+					if (1 > value)
+						value = 50;
+					pluginConfig.buttonPollInterval = value;
+					saveConfig();
+				}}
+			/>
+		</Field>
+	);
+};
 
 let firstMusicPlayed = false;
+let lastAlbumAppId = 0;
+let lastTrackNum = -1;
 
 async function MusicPlaybackChange(param0: boolean | MusicTrack) {
 	if (param0 === false)
@@ -93,47 +94,46 @@ async function MusicPlaybackChange(param0: boolean | MusicTrack) {
 	}
 
 	const status: MusicTrack = param0 as MusicTrack;
-	const albumId = status.uSoundtrackAppId;
+	const albumAppId = status.uSoundtrackAppId;
 	const trackNum = status.nActiveTrack;
 	const playbackStatus = status.ePlaybackStatus;
+	const albumTracksInfo = await SteamClient.Apps.GetSoundtrackDetails(albumAppId)
+	const albumStoreInfo = ((window.appStore as any).allApps as SteamAppOverview[]).find(x => x.appid === albumAppId)
+	const trackInfo = albumTracksInfo.tracks[trackNum]
 
 	await set_playback_status({status: SteamToSmtcPlaybackStatus(playbackStatus)})
 
-	// TODO: these crash for now \/
+	if (lastAlbumAppId === albumAppId && lastTrackNum === trackNum)
+		return;
+
+	lastAlbumAppId = albumAppId;
+	lastTrackNum = trackNum;
 
 	await set_display({
-		title: "Track " + trackNum.toString(),
-		artist: "test2",
-		album_title: "test",
-		album_artist: "test",
-		track_number: "2"
+		album_artist: anyAscii(albumTracksInfo.metadata.artist ?? ""),
+		album_title: anyAscii(albumStoreInfo.display_name ?? ""),
+		song_artist: anyAscii(albumTracksInfo.metadata.artist ?? ""),
+		song_title: anyAscii(trackInfo.trackDisplayName ?? ""),
+		track_number: trackNum.toString()
 	})
-
-	// await SMTC.update_display_properties()
-
-	console.log(param0)
 }
 
 export default definePlugin(() => {
-	// Call the backend method
-	// backendMethod({
-	// 	message: 'Hello World From Frontend!',
-	// 	status: true,
-	// 	count: 69,
-	// }).then((message: any) => {
-	// 	console.log('Result from backendMethod:', message);
-	// });
+	const storedConfig = JSON.parse(localStorage.getItem(localStorageKey))
+	pluginConfig = { ...pluginConfig, ...storedConfig };
 
 	const playbackChangeCallback = SteamClient.Music.RegisterForMusicPlaybackChanges(MusicPlaybackChange);
-
-	// Millennium.AddWindowCreateHook(windowCreated);
+	const event_loop = setInterval(function() {if (firstMusicPlayed) lua_event_loop();}, pluginConfig.buttonPollInterval);
 
 	return {
-		title: 'My Plugin',
+		title: 'SteamMusicControl',
 		icon: <IconsModule.Settings />,
-		// content: <SettingsContent />,
+		content: <SettingsContent />,
 		onDismount: () => {
+			clearInterval(event_loop);
 			firstMusicPlayed = false;
+			lastAlbumAppId = 0;
+			lastTrackNum = -1;
 			playbackChangeCallback.unregister();
 		}
 	};

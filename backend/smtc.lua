@@ -1,11 +1,11 @@
 ---@diagnostic disable: undefined-field
 local logger = require("logger")
 local ffi = require("ffi")
+local new_fifo = require("lib.fifo")
 local combase = ffi.load("combase.dll")
 local msvcrt = ffi.load("msvcrt.dll")
 local winrt_string = ffi.load("api-ms-win-core-winrt-string-l1-1-0.dll")
 local winrt_core = ffi.load("api-ms-win-core-winrt-l1-1-0.dll")
-local millennium = require("millennium")
 
 require("smtc_h")
 
@@ -166,7 +166,7 @@ local buttonPressedQueryInterface = ffi.cast(
             msvcrt.memcmp(riid, IID_TypedEventHandler, IIDSize) == 0
         then
             ppv[0] = thisPtr
-            logger:info("addref")
+            -- logger:info("addref")
             thisPtr.cRef = thisPtr.cRef + 1
             -- InterlockedIncrement(ffi.cast(intptr, tonumber(ffi.cast(intptr, thisPtr)) + ffi.sizeof(intptr)))
             return 0
@@ -180,28 +180,30 @@ local buttonPressedQueryInterface = ffi.cast(
 local buttonPressedAddRef = ffi.cast(
     "ULONG (__stdcall *)(SystemMediaTransportControlsButtonPressedEventArgs*)",
     function(thisPtr)
-        logger:info("addref")
+        -- logger:info("addref")
         thisPtr.cRef = thisPtr.cRef + 1
         return thisPtr.cRef
-        --return InterlockedIncrement(ffi.cast(intptr, tonumber(ffi.cast(intptr, thisPtr)) + ffi.sizeof(intptr)))
+        -- return InterlockedIncrement(ffi.cast(intptr, tonumber(ffi.cast(intptr, thisPtr)) + ffi.sizeof(intptr)))
     end
 )
 
 local buttonPressedRelease = ffi.cast(
     "ULONG (__stdcall *)(SystemMediaTransportControlsButtonPressedEventArgs*)",
     function(thisPtr)
-        logger:info("release")
+        -- logger:info("release")
         thisPtr.cRef = thisPtr.cRef - 1
         return thisPtr.cRef
-        --return InterlockedDecrement(ffi.cast(intptr, tonumber(ffi.cast(intptr, thisPtr)) + ffi.sizeof(intptr)))
+        -- return InterlockedDecrement(ffi.cast(intptr, tonumber(ffi.cast(intptr, thisPtr)) + ffi.sizeof(intptr)))
     end
 )
+
+-- sadly lua crashes when calling millennium.call_frontend_method from a callback function so we're using an event queue
+local buttonPressedQueue = new_fifo()
+buttonPressedQueue:setempty(function() return -1 end)
 
 local buttonPressedInvoke = ffi.cast(
     "HRESULT (__stdcall *)(SystemMediaTransportControlsButtonPressedEventArgs*, ISystemMediaTransportControls*, ISystemMediaTransportControlsButtonPressedEventArgs*)",
     function(thisPtr, sender, args)
-        logger:info("buttonpressed start")
-
         local pSmtc_button_args = voidptr()
         args.lpVtbl.QueryInterface(args, IID_ISystemMediaTransportControlsButtonPressedEventArgs, pSmtc_button_args)
         local smtc_button_args = ffi.cast(ISystemMediaTransportControlsButtonPressedEventArgsPtr_Raw, pSmtc_button_args[0])
@@ -209,24 +211,16 @@ local buttonPressedInvoke = ffi.cast(
         local pressedButtonPtr = SystemMediaTransportControlsButton()
         smtc_button_args.lpVtbl.get_Button(smtc_button_args, pressedButtonPtr)
 
-        local pressedButton = pressedButtonPtr[0] or 0
-
-        -- if this is commented out the luavm exits itself after leaving this function scope without millennium noticing
-        -- millennium.call_frontend_method("MusicController.TogglePlayPause")
-
-        if pressedButton == SMTC.SystemMediaTransportControlsButton.Play or pressedButton == SMTC.SystemMediaTransportControlsButton.Pause then
-            -- millennium.call_frontend_method("MusicController.TogglePlayPause")
-        elseif pressedButton == SMTC.SystemMediaTransportControlsButton.Next then
-            -- millennium.call_frontend_method("MusicController.PlayNext")
-        elseif pressedButton == SMTC.SystemMediaTransportControlsButton.Previous then
-            -- millennium.call_frontend_method("MusicController.PlayPrevious")
-        end
+        buttonPressedQueue:push(tonumber(pressedButtonPtr[0] or 0))
 
         smtc_button_args.lpVtbl.Release(smtc_button_args)
-        logger:info("buttonpressed end")
         return 0;
     end
 )
+
+function SMTC.get_pressed_button()
+    return buttonPressedQueue:pop()
+end
 
 ---@alias vtable {lpVtbl: unknown}
 
@@ -303,14 +297,14 @@ function SMTC.init()
 
 end
 
----@param title string
----@param artist string
----@param album_title string|nil
----@param album_artist string|nil
----@param track_number string|nil
-function SMTC.set_display(title, artist, album_title, album_artist, track_number)
-    local cTitle = str2cwstr(title)
-    local cArtist = str2cwstr(artist)
+---@param album_artist string
+---@param album_title string
+---@param song_artist string
+---@param song_title string
+---@param track_number string
+function SMTC.set_display(album_artist, album_title, song_artist, song_title, track_number)
+    local cTitle = str2cwstr(song_title)
+    local cArtist = str2cwstr(song_artist)
     local cAlbumTitle = str2cwstr(album_title)
     local cAlbumArtist = str2cwstr(album_artist)
     local cTrackNumber = str2cwstr(track_number)
@@ -356,33 +350,27 @@ function SMTC.set_display(title, artist, album_title, album_artist, track_number
     -- end put artist
 
     --- put album artist
-    if album_artist ~= nil then
-        hr = winrt_string.WindowsCreateString(cAlbumArtist, msvcrt.wcslen(cAlbumArtist), pHstring)
-        logger:info(string.format("put album_artist WindowsCreateString hr = 0x%08X", hr))
-        hr = smtc_music_properties.lpVtbl.put_AlbumArtist(smtc_music_properties, pHstring[0])
-        winrt_string.WindowsDeleteString(pHstring[0])
-        logger:info(string.format("put_AlbumArtist hr = 0x%08X", hr))
-    end
+    hr = winrt_string.WindowsCreateString(cAlbumArtist, msvcrt.wcslen(cAlbumArtist), pHstring)
+    logger:info(string.format("put album_artist WindowsCreateString hr = 0x%08X", hr))
+    hr = smtc_music_properties.lpVtbl.put_AlbumArtist(smtc_music_properties, pHstring[0])
+    winrt_string.WindowsDeleteString(pHstring[0])
+    logger:info(string.format("put_AlbumArtist hr = 0x%08X", hr))
     -- end put album artist
 
     --- put album title
-    if album_title ~= nil then
-        hr = winrt_string.WindowsCreateString(cAlbumTitle, msvcrt.wcslen(cAlbumTitle), pHstring)
-        logger:info(string.format("put album_title WindowsCreateString hr = 0x%08X", hr))
-        hr = smtc_music_properties2.lpVtbl.put_AlbumTitle(smtc_music_properties2, pHstring[0])
-        winrt_string.WindowsDeleteString(pHstring[0])
-        logger:info(string.format("put_AlbumTitle hr = 0x%08X", hr))
-    end
+    hr = winrt_string.WindowsCreateString(cAlbumTitle, msvcrt.wcslen(cAlbumTitle), pHstring)
+    logger:info(string.format("put album_title WindowsCreateString hr = 0x%08X", hr))
+    hr = smtc_music_properties2.lpVtbl.put_AlbumTitle(smtc_music_properties2, pHstring[0])
+    winrt_string.WindowsDeleteString(pHstring[0])
+    logger:info(string.format("put_AlbumTitle hr = 0x%08X", hr))
     -- end put album title
 
     --- put track number
-    if track_number ~= nil then
-        hr = winrt_string.WindowsCreateString(cTrackNumber, msvcrt.wcslen(cTrackNumber), pHstring)
-        logger:info(string.format("put track_number WindowsCreateString hr = 0x%08X", hr))
-        hr = smtc_music_properties2.lpVtbl.put_TrackNumber(smtc_music_properties2, pHstring[0])
-        winrt_string.WindowsDeleteString(pHstring[0])
-        logger:info(string.format("put_TrackNumber hr = 0x%08X", hr))
-    end
+    hr = winrt_string.WindowsCreateString(cTrackNumber, msvcrt.wcslen(cTrackNumber), pHstring)
+    logger:info(string.format("put track_number WindowsCreateString hr = 0x%08X", hr))
+    hr = smtc_music_properties2.lpVtbl.put_TrackNumber(smtc_music_properties2, pHstring[0])
+    winrt_string.WindowsDeleteString(pHstring[0])
+    logger:info(string.format("put_TrackNumber hr = 0x%08X", hr))
     -- end put track number
 
     smtc_display_updater.lpVtbl.Update(smtc_display_updater)
